@@ -110,7 +110,7 @@ if reference_date and execute_button:
     acoess = lista() #ajustados os nomes dos ativos para uso no yfinance
         
     inicio = lista_data.index[-1] #ultimo da lista
-    fim = lista_data.index[0] #primeiro da lista
+    fim = lista_data.index[0] + timedelta(days=1) #1 dia a mais do primeiro da lista, exclusive
     
     # @st.cache_data
     def baixa():
@@ -125,16 +125,16 @@ if reference_date and execute_button:
     "filtrando para as datas selecionadas..."
     dfxx = data_yf.loc[data_yf.index.isin(lista_data.index)]    
     # Pegar a última linha do DataFrame de origem e copiar para o DataFrame de destino
-    ultima_linha = data_yf.iloc[-1]
-    novo_pd = pd.DataFrame(data_yf.iloc[-1,:]) #pra poder transpor
-    novo_pd = novo_pd.transpose()        
-    dfxx2 = pd.concat([dfxx, novo_pd])
+    # ultima_linha = data_yf.iloc[-1]
+    # novo_pd = pd.DataFrame(data_yf.iloc[-1,:]) #pra poder transpor
+    # novo_pd = novo_pd.transpose()        
+    # dfxx2 = pd.concat([dfxx, novo_pd])
     "dataframe filtrado!"
     ##filtrando o data_yf
     
     ##segundo bloco
     "ajustando o dataframe..."
-    teste2 = dfxx2.copy()
+    teste2 = dfxx.copy()
     teste2.index = pd.to_datetime(teste2.index).strftime('%d-%m-%Y')
     teste2 = teste2.round(decimals = 2)
     df_pivot = teste2.T #para transpor
@@ -144,7 +144,7 @@ if reference_date and execute_button:
     df_pivot = df_pivot.rename(columns={'index': 'ação'}) #renomeia essa coluna para 'ação'
     #df_pivot deve ter a coluna 'ação' e exatamente 6 colunas de datas    
     #excluir as colunas excedentes, se houver
-    if df_pivot.shape[0] == 7:
+    if df_pivot.shape[1] > 7:
         df_pivot = df_pivot.drop(df_pivot.columns[1], axis=1)
     "dataframe ajustado!"
     ##segundo bloco
@@ -152,11 +152,11 @@ if reference_date and execute_button:
     ##calculando 'ponderado'
     "calculando o fator de ponderação..."
     def calcular_resultado(row):    
-        varx5 = (row[1] / row[6]) - 1 #lembrando que o mês 5 está na coluna 1
-        varx4 = (row[2] / row[6]) - 1 #lembrando que o mês 4 está na coluna 2
-        varx3 = (row[3] / row[6]) - 1 #lembrando que o mês 3 está na coluna 3
-        varx2 = (row[4] / row[6]) - 1 #lembrando que o mês 2 está na coluna 4
-        varx1 = (row[5] / row[6]) - 1 #lembrando que o mês 1 está na coluna 5
+        varx5 = (row.iloc[1] / row.iloc[6]) - 1 #lembrando que o mês 5 está na coluna 1
+        varx4 = (row.iloc[2] / row.iloc[6]) - 1 #lembrando que o mês 4 está na coluna 2
+        varx3 = (row.iloc[3] / row.iloc[6]) - 1 #lembrando que o mês 3 está na coluna 3
+        varx2 = (row.iloc[4] / row.iloc[6]) - 1 #lembrando que o mês 2 está na coluna 4
+        varx1 = (row.iloc[5] / row.iloc[6]) - 1 #lembrando que o mês 1 está na coluna 5
         return (varx5*math.sqrt(5) + varx4*math.sqrt(4) + varx3*math.sqrt(3) + varx2*math.sqrt(2) + varx1*math.sqrt(1) ) / 8.382
     
     df_pivot['Ponderado'] = df_pivot.apply(lambda row: calcular_resultado(row), axis=1)
@@ -183,30 +183,30 @@ if reference_date and execute_button:
         new_df = new_df.query('FR >= 90')
         new_df.reset_index(inplace=True, drop=True) #drop joga fora a coluna com o index anterior    
         # Adicionando uma nova coluna com o preço mais recente para cada ação em new_df
-        new_df['preço mais recente'] = new_df['ação'].apply(lambda x: dfxx2[x][-1])
+        new_df['preço mais recente'] = new_df['ação'].apply(lambda x: dfxx[x].iloc[-1])
         st.dataframe(new_df.round(decimals = 3), hide_index=True)
         ##filtrando  FR > 90
     
     with col2:
-        st.write("data de hoje:", reference_date) #FALTA CONFIGURAR ESSA DATA
+        st.write("data de hoje:", reference_date.strftime("%d-%m-%Y"))
         
         ##análise do MACD das ações selecionadas
         # Lista de símbolos de ações
         lista = new_df['ação'].tolist()    
-        new_df = new_df.set_index('ação') #depois de gerar a lista
-        new_df = new_df.round(decimals = 3)
+        new_df2 = new_df.set_index('ação') #depois de gerar a lista
+        new_df2 = new_df2.round(decimals = 3)
+        
+        #filtrar o data_yf só com as ações da lista
+        todos_dados = data_yf[lista]
         
         # Loop pelas ações na lista
         @st.cache_data
-        def calcula_macd():
-            for simbolo in enumerate(lista):
-                # Obtém os dados do Yahoo Finance            
-                dadosx = yf.download(simbolo[1], start=inicio, end=fim, progress=False)
-                p = new_df.loc[simbolo[1], 'preço mais recente']                
-                
-                macd = ta.trend.macd(dadosx['Adj Close']) # Calcula o MACD        
-                # Verifica se o MACD está positivo e ascendente
-                if macd[-1] > 0 and macd[-1] > macd[-2]:            
+        def calcula_macd():            
+            for simbolo, dadosx in todos_dados.items():
+                p = dadosx.iloc[-1]  # ultimo preço
+                macd = ta.trend.macd(dadosx)
+                # verifica se macd está ascendente ou descendente
+                if macd.iloc[-1] > 0 and macd.iloc[-1] > macd.iloc[-2]:         
                     st.write(f'{simbolo[1]}: MACD positivo ascendente, R${p}') #pra mostrar o preço também
         
         st.write(calcula_macd()) #só pra escrever se tá ascendente
@@ -238,8 +238,8 @@ if 'lista' in st.session_state:
     
     ##porque tem que ser o df só da ação selecionada pra gerar o gráfico
     "baixando dados da ação selecionada..."    
-    dadosx = yf.download(choice, start=inicio, end=fim, progress=False)
-    dadosx.sort_index(ascending=True, inplace=True) #organiza pelo index, do mais antigo pro mais novo, pra fazer o gráfico na ordem certa   
+    #######dadosx = yf.download(choice, start=inicio, end=fim, progress=False)
+    #######dadosx.sort_index(ascending=True, inplace=True) #organiza pelo index, do mais antigo pro mais novo, pra fazer o gráfico na ordem certa   
     "ok!"
     ##porque tem que ser o df só da ação selecionada pra gerar o gráfico
 
@@ -247,8 +247,18 @@ if 'lista' in st.session_state:
     cf.go_offline()
     cf.set_config_file(world_readable=True, theme='white') 
     #pio.renderers.default = "notebook" # should change by looking into pio.renderers
-    ##configuração do cufflinks    
+    ##configuração do cufflinks
 
+    #função para baixar os dados da lista
+    @st.cache_data
+    def baixa_lista():    
+        bleh = yf.download(lista, start=inicio, end=fim, progress=True)        
+        return bleh
+    bleh = baixa_lista()
+    dadosx = bleh.loc[:, (['Open', 'High', 'Low', 'Close', 'Volume'], choice)]
+    dadosx.columns = dadosx.columns.droplevel(1)
+    
+    
     ## grafico com o cufflinks
     qf = cf.QuantFig(dadosx, kind='candlestick', name=choice, title=choice)
     qf.add_bollinger_bands()
@@ -268,3 +278,5 @@ if 'lista' in st.session_state:
     ##ajuste final do grafico
 else:
     st.warning("selecione a data e clique em Executar")    
+
+st.warning("gráfico de algumas ações não estão sendo gerados. Verificar") 
