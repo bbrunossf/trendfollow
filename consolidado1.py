@@ -207,7 +207,7 @@ if reference_date and execute_button:
                 macd = ta.trend.macd(dadosx)
                 # verifica se macd está ascendente ou descendente
                 if macd.iloc[-1] > 0 and macd.iloc[-1] > macd.iloc[-2]:         
-                    st.write(f'{simbolo[1]}: MACD positivo ascendente, R${p}') #pra mostrar o preço também
+                    st.write(f'{simbolo}: MACD positivo ascendente, R${p}') #pra mostrar o preço também
         
         st.write(calcula_macd()) #só pra escrever se tá ascendente
         ##análise do MACD das ações selecionadas
