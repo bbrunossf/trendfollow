@@ -91,5 +91,5 @@ Este projeto demonstra como é possível utilizar dados financeiros e ferramenta
 
 ## Código-fonte
 O código-fonte completo está disponível em [https://github.com/bbrunossf/trendfollow].  
-A aplicação está hospedada em [https://bbrunossf-trendfollow-consolidado1-xsxei5.streamlit.app/].
+A aplicação está hospedada em [https://bbrunossf-trendfollow-consolidado1-xsxei5.streamlit.app/].  
 A imagem renderizada do jupyter notebook está em [https://nbviewer.org/github/bbrunossf/trendfollow/blob/master/trend_follow.ipynb]
