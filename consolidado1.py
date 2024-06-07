@@ -93,13 +93,13 @@ if reference_date and execute_button:
     st.write(f"baixando dados de todos os ativos (volume mínimo de R\${volume_min:,.2f}, preço mínimo de R\${preco_min:.2f})")
     df2 = dados_brapi()
     df2 = df2[['stock', 'name', 'close', 'sector', 'volume']].sort_values(by='stock')
-    #retirar as que tem 11 no nome
+    #retirar as que tem 11 e 32 no nome
     # filter the rows that contain the substring
-    substring = '11'
+    substring = ['11', '32']
     filter = df2['stock'].str.contains(substring)
     filtered_df = df2[~filter]
     df2 = filtered_df
-    "Obtidos os valores, excluindo ativos com '11'"    
+    "Obtidos os valores, excluindo ativos com '11' e com '32'"    
     
     @st.cache_data
     def lista():
