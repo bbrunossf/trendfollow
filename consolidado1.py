@@ -96,7 +96,9 @@ if reference_date and execute_button:
     #retirar as que tem 11 e 32 no nome
     # filter the rows that contain the substring
     substring = ['11', '32']
-    filter = df2['stock'].str.contains(substring)
+    #filter = df2['stock'].str.contains(substring)
+    filter = df2['stock'].str.contains('|'.join(substring))
+
     filtered_df = df2[~filter]
     df2 = filtered_df
     "Obtidos os valores, excluindo ativos com '11' e com '32'"    
