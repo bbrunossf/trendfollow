@@ -18,15 +18,33 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import ta
 from ta.momentum import StochasticOscillator
+from ta.volatility import AverageTrueRange
 
 import cufflinks as cf
 import plotly.express as px
 import plotly.io as pio 
 
+
+
 # Configuração do Streamlit
 st.set_page_config(page_title="Brunossf teste carteira 2024", page_icon="tada", layout="wide")
 st.title('Trend following (6 meses)') #título da página
 
+st.__version__
+yf.__version__
+pd.__version__
+
+"""
+arrumei a função de baixar os dados
+Agora tentando incluir o Stop ATR.
+Já deu pra calcular uma por uma na última data, mas eu queria plotar a série no gráfico.
+Tentando..
+"""
+
+def calculate_stop_atr(entry_price, atr, atr_multiplier=3):
+    stop_loss = entry_price - (atr * atr_multiplier)
+    return stop_loss
+    
 def list_useful_dates(reference_date):
     useful_dates = []
     useful_dates.append(reference_date - timedelta(days=1)) #1 dia antes
@@ -38,39 +56,54 @@ def list_useful_dates(reference_date):
 
 reference_date = st.date_input("Digite a data de referência:")
 
+#check
+# from datetime import date
+# reference_date = datetime(2024, 7, 9)
+#yfinance suporta string com 'YYYY-MM-DD' ou tipo datetime
+
+
 if reference_date:    
     result = list_useful_dates(reference_date)    
 
 # Widget de botão
 execute_button = st.button("Executar")
 
+# if reference_date and execute_button:
 if reference_date and execute_button:
     ############testar essas datas    
+    # DataFrame vazio para concatenar os dados        
     lista_data = pd.DataFrame(columns=['Adj Close'])
     
-    with st.expander("cálculo das datas"):
-        "calculando as datas úteis..."
-        for entry in result:
-            z = entry
-            zz = z + timedelta(days=1)        
-        
-            while True:
-                data1 = pd.DataFrame(yf.download('VALE3.SA', start=z, end=zz, progress=False)['Adj Close'])
-                
-                if data1.shape[0] > 0:
-                    lista_data = pd.concat([lista_data, data1])
-                    break  # Saia do loop interno se os dados foram baixados com sucesso
-                    
-                st.write(f'{data1.shape[1]} datas válidas')
-                new_date_z = z - timedelta(days=1)
-                new_date_zz = new_date_z + timedelta(days=1)
-                st.write("Data inválida. Obtendo novos valores...")
-                
-                # if new_date_z < limite_inferior:  # Defina a condição de saída adequada
-                #     break  # Saia do loop interno se atingir uma condição de parada
-                    
-                z = new_date_z
-                zz = new_date_zz
+    st.write(f"result tem {len(result)} datas")
+    
+    # Loop para baixar os dados
+    for date in result:
+        success = False
+        current_date = date
+        while not success:
+            # Formata a data atual para o formato de string
+            current_date_str = current_date.strftime('%Y-%m-%d')
+            end_date_str = current_date + timedelta(days=1)
+            end_date_str = end_date_str.strftime('%Y-%m-%d')
+            try:
+                print(f"testando intervalo {current_date_str} e {end_date_str}...")
+                # Baixa os dados da ação na data especificada
+                data = pd.DataFrame(yf.download('VALE3.SA', start=current_date_str, end=end_date_str)['Adj Close'])
+                # Verifica se o dataframe não está vazio
+                if not data.empty:
+                    lista_data = pd.concat([lista_data, data])
+                    success = True
+                else:
+                    # Se o dataframe estiver vazio, tenta o dia anterior
+                    current_date -= timedelta(days=1)
+                    print('data inválida. Testando dia anterior...')
+            except Exception as e:
+                # Em caso de erro, tenta o dia anterior
+                current_date -= timedelta(days=1)
+                print('erro. Testando o dia anterior......')
+    
+    #nova lista de datas. Pegar do df completo
+    # lista_data = list(lista_data.index)
     "datas ok!"
     # Continue com o restante do código aqui, se necessário
     # st.write('novas datas:')
@@ -101,7 +134,7 @@ if reference_date and execute_button:
 
     filtered_df = df2[~filter]
     df2 = filtered_df
-    "Obtidos os valores, excluindo ativos com '11' e com '32'"    
+    "Obtidos os valores, excluindo ativos com '11' e com '32'"   
     
     @st.cache_data
     def lista():
@@ -132,6 +165,8 @@ if reference_date and execute_button:
     # novo_pd = novo_pd.transpose()        
     # dfxx2 = pd.concat([dfxx, novo_pd])
     "dataframe filtrado!"
+    st.write('dataframe após filtrar')
+    st.dataframe(dfxx)
     ##filtrando o data_yf
     
     ##segundo bloco
@@ -141,9 +176,13 @@ if reference_date and execute_button:
     teste2 = teste2.round(decimals = 2)
     df_pivot = teste2.T #para transpor
     
+    
+    
     #Jogando o nome das ações para uma coluna (só depois de transpor)
-    df_pivot = df_pivot.reset_index() #ao resetar o index, o nome das ações fica em uma coluna 'index'.
-    df_pivot = df_pivot.rename(columns={'index': 'ação'}) #renomeia essa coluna para 'ação'
+    df_pivot = df_pivot.reset_index() #ao resetar o index, o nome das ações fica em uma coluna 'index'.    
+    df_pivot = df_pivot.rename(columns={'Ticker': 'ação'}) #renomeia essa coluna para 'ação'
+    st.write('dataframe após mudar o nome da coluna')
+    st.dataframe(df_pivot)
     #df_pivot deve ter a coluna 'ação' e exatamente 6 colunas de datas    
     #excluir as colunas excedentes, se houver
     if df_pivot.shape[1] > 7:
@@ -175,6 +214,8 @@ if reference_date and execute_button:
     df_final = df_pivot[(df_pivot['FR'] >= 90)]
     "FR calculado!"
     ##calculo do FR
+    
+    st.dataframe(df_pivot)
     
     ##2 colunas, para a tabela e para o MACD
     col1, col2 = st.columns(2)
@@ -260,25 +301,87 @@ if 'lista' in st.session_state:
     dadosx = bleh.loc[:, (['Open', 'High', 'Low', 'Close', 'Volume'], choice)]
     dadosx.columns = dadosx.columns.droplevel(1)
     
-    
-    ## grafico com o cufflinks
-    qf = cf.QuantFig(dadosx, kind='candlestick', name=choice, title=choice)
-    qf.add_bollinger_bands()
-    qf.add_sma(name='sma20', color='red')
-    qf.add_volume()    
-    fig = qf.iplot(asFigure=True, dimensions=(800, 400), up_color='green', down_color='red')
-    ## grafico com o cufflinks
+    # #esse deu certo, mas uma ação de cada vez e somente o último preço
+    # for i in lista:
+        # df_acao = bleh.loc[:, (['Open', 'High', 'Low', 'Close', 'Volume'], i)]
+        # df_acao.columns = df_acao.columns.droplevel(1)
+        # st.write(f"Dados da ação {i}")
+        
+        # atr_indicator = AverageTrueRange(high=df_acao['High'], low=df_acao['Low'], close=df_acao['Close'], window=14)
+        # df_acao['ATR'] = atr_indicator.average_true_range() #esse é um multiplicador para o preço atual
+        
+        # #st.dataframe(df_acao)
+        
+        # # Define o preço de entrada e o multiplicador ATR
+        # entry_price = df_acao.iloc[-1, 3]  # última linha, coluna 3 ('Close')
+        # atr_value = df_acao['ATR'].iloc[-1]  # Obtém o valor ATR mais recente
+        # atr_multiplier = 3  # Multiplicador ATR
+        
+        # # Calcula o stop ATR
+        # stop_loss = calculate_stop_atr(entry_price, atr_value, atr_multiplier)
+        # stop_loss_pct = entry_price / stop_loss - 1
+        # # st.write(f"Preço de Entrada: {entry_price}")
+        # # st.write(f"Valor do ATR: {atr_value:.2f}")
+        # # st.write(f"Stop Loss ATR: {stop_loss:.2f}")
+        # st.write(f"% de perda admitido: {stop_loss_pct:.2%}")
+        
+    # Loop para processar cada ação na lista e plotar os gráficos com os dados e Stop ATR
+    #código do chatGPT
+    #não está ruim, mas plota todos os graficos, e a serie Stop ATR está vazia
+    for acao in lista:
+        df_acao = bleh.loc[:, (['Open', 'High', 'Low', 'Close', 'Volume'], acao)]
+        df_acao.columns = df_acao.columns.droplevel(1)
 
-    ##ajuste final do grafico
-    #update_xaxes ou update_yaxes é do plotly, que gera a fig
-    fig.update_xaxes(
-        rangebreaks=[
-            dict(bounds=["sat", "mon"]), #hide weekends
-        ]
-    )    
-    st.plotly_chart(fig)
-    ##ajuste final do grafico
+        # Calcula o ATR para a ação atual
+        atr_indicator = AverageTrueRange(high=df_acao['High'], low=df_acao['Low'], close=df_acao['Close'], window=14, fillna=True)
+        df_acao['ATR'] = atr_indicator.average_true_range()
+        
+        
+        # Últimos preços de fechamento e ATR
+        entry_price = df_acao['Close'].iloc[-1]
+        atr_value = df_acao['ATR'].iloc[-1]
+        atr_multiplier = 3  # Ajustável conforme necessário
+
+        # Calcula o Stop ATR para cada ponto de dados (considerando valores NaN)
+        df_acao['Stop ATR'] = df_acao.apply(lambda row: row['Close'] - row['ATR'] * atr_multiplier, axis=1)
+
+
+
+        # Calcula o Stop ATR
+        stop_atr = calculate_stop_atr(entry_price, atr_value, atr_multiplier)
+        st.write(f"Stop Loss ATR: {stop_atr:.2f}")        
+        st.write(f"check: {len(df_acao)}") 
+        
+       
+        # Plotagem do gráfico
+        qf = cf.QuantFig(df_acao, title=acao, legend='top', name='Candlestick')
+        qf.add_bollinger_bands()
+        qf.add_sma(name='sma20', color='red')
+        #qf.add_line(x=df_acao.index, y=[stop_atr]*len(df_acao), name='Stop ATR', color='blue', width=1.5)
+        qf.add_volume()
+        fig = qf.iplot(asFigure=True, dimensions=(1000, 400), up_color='green', down_color='red')
+        
+        # Adiciona linha de Stop ATR
+        fig.add_trace(go.Scatter(x=df_acao.index, y=[stop_atr]*len(df_acao), mode='lines', name='Stop ATR', line=dict(color='green', width=3), connectgaps=False))
+        
+        
+        # ## grafico com o cufflinks
+        # qf = cf.QuantFig(dadosx, kind='candlestick', name=choice, title=choice)
+        # qf.add_bollinger_bands()
+        # qf.add_sma(name='sma20', color='red')
+        # qf.add_volume()    
+        # fig = qf.iplot(asFigure=True, dimensions=(800, 400), up_color='green', down_color='red')
+        # ## grafico com o cufflinks
+
+        ##ajuste final do grafico
+        #update_xaxes ou update_yaxes é do plotly, que gera a fig
+        fig.update_xaxes(
+            rangebreaks=[
+                dict(bounds=["sat", "mon"]), #hide weekends
+            ]
+        )    
+        st.plotly_chart(fig)
+        ##ajuste final do grafico
 else:
     st.warning("selecione a data e clique em Executar")    
 
-st.warning("gráfico de algumas ações não estão sendo gerados. Verificar") 
