@@ -1052,5 +1052,7 @@ def grafico2(rows):
 # In[56]:
 
 
-app.run(debug=True, port='8503', jupyter_mode="jupyterlab")
+#app.run(debug=True, port='8503', jupyter_mode="jupyterlab") #somente para ambiente local
+server = app.server
+
 

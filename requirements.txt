@@ -1,4 +1,5 @@
-﻿cufflinks==0.17.3
+﻿gunicorn
+cufflinks==0.17.3
 dash
 dash-bootstrap-components
 matplotlib==3.5.1
