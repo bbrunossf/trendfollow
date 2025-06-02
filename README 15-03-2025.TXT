@@ -1,0 +1,16 @@
+Sequencia da aplicação:
+Seleciona a data de referência
+calcula 6 datas espaçadas 1 mês
+testa essas datas e retorna datas válidas
+
+filtra as ações com base no volume e preço mínimo
+baixa os dados dessas ações, calculando o ponderado
+ordena os dados, e corta pelo FR > 80
+
+faz uma lista das ações selecionadas, baixa os dados todos em um df só, cria dfs individuais para poder calcular o ATR, junta todos esses dfs de novo em um só
+
+cria uma tabela com outros dados das ações: preço máximo de 52 semanas, indústria, setor, sigla, nome e risco (distância percentual de chegar no preço de ATR stop), distância em R$ do preço atual para o preço máximo de 52 semanas, e a relação Retorno/Risco, e ainda salva essa tabela num csv
+
+cria o gráfico de candles com o valor do Stop ATR, as bandas de bollinger, o volume médio, e o MACD
+
+cria o outro gráfico de bolhas, com uma linha vertical e outra horizontal fixas
