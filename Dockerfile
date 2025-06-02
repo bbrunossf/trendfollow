@@ -2,19 +2,21 @@ FROM python:3.10-slim
 
 RUN apt-get update && \
     apt-get install -y build-essential wget libtool autoconf automake pkg-config && \
-    wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
-    tar -xvzf ta-lib-0.4.0-src.tar.gz && \
+    wget https://github.com/ta-lib/ta-lib/releases/download/v0.6.4/ta-lib-0.6.4-src.tar.gz && \
+    tar -xvzf ta-lib-0.6.4-src.tar.gz && \
     cd ta-lib && \
-    ./configure --prefix=/usr/local && \
+    ./configure --prefix=/usr && \
     make && \
     make install && \
     cd .. && \
-    rm -rf ta-lib ta-lib-0.4.0-src.tar.gz
+    rm -rf ta-lib-0.6.4-src.tar.gz
 
 # Ajuste para garantir que pip encontre a lib
-ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH
 ENV CFLAGS="-I/usr/local/include"
-ENV LDFLAGS="-L/usr/local/lib"
+ENV LDFLAGS="-L/usr/lib"
+ENV TA_LIBRARY_PATH=$PREFIX/lib
+ENV TA_INCLUDE_PATH=$PREFIX/include
 
 WORKDIR /app
 
