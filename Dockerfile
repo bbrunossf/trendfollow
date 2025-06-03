@@ -29,6 +29,9 @@ RUN apt-get remove --purge -y build-essential wget libtool autoconf automake pkg
     apt-get autoremove -y && \
     apt-get clean
 
+# Definir a porta que o contêiner irá expor
+EXPOSE 10000
+
 # Definir comando padrão
 CMD ["python", "main.py"]
 
