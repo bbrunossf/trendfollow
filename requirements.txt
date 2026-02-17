@@ -1,4 +1,5 @@
 gunicorn
+fastapi
 dash
 dash-bootstrap-components
 matplotlib
@@ -8,8 +9,6 @@ pandas<2
 pandas_datareader
 plotly
 requests
-ta
-TA-Lib
 xlrd>=1.0.0
 xlsxwriter
 yfinance==0.2.54
