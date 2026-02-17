@@ -1055,6 +1055,6 @@ def grafico2(rows):
 #app.run(debug=True, port='8503', jupyter_mode="jupyterlab") #somente para ambiente local
 server = app.server
 if __name__ == '__main__':
-    server.run(host='0.0.0.0', port=10000)  # Define a porta que o Dash deve escutar
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
 
