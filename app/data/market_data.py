@@ -17,7 +17,12 @@ from __future__ import annotations
 import requests
 import pandas as pd
 import yfinance as yf
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Literal
+
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+
 
 BRAPI_BASE_URL = "https://brapi.dev/api"
 BRAPI_STOCK_LIST_ENDPOINT = "/quote/list"
@@ -126,12 +131,16 @@ def download_price_history(tickers: Iterable[str],
                      start=start,
                      end=end,
                      auto_adjust=auto_adjust,
-                     group_by="ticker" if group_by_ticker else "column",
+                     group_by="column",
+                     multi_level_index=False, #mantem df simples, sem multinivel
                      progress=progress)
 
     if df.empty:
         raise RuntimeError("Nenhum dado retornado pelo yfinance.")
 
+    #debug
+    #print("====DEBUG====")
+    #print(df.columns)
     return df
 
 
@@ -178,3 +187,157 @@ def get_asset_metadata(tickers: Iterable[str],
         raise RuntimeError("Nenhum metadado foi obtido.")
 
     return pd.DataFrame.from_records(records)
+
+
+
+
+def get_price_history(
+    tickers: Iterable[str],
+    period_months: int,
+    reference_date: str | None = None,
+    group_by_ticker: bool = False,
+    auto_adjust: bool = False
+) -> pd.DataFrame:
+    """
+    Função de alto nível para obter histórico de preços a partir de um período em meses.
+
+    Esta função é um adaptador entre o pipeline e o yfinance.
+    """
+
+    if reference_date:
+        end_date = datetime.strptime(reference_date, "%Y-%m-%d")
+    else:
+        end_date = datetime.today()
+
+    start_date = end_date - relativedelta(months=period_months)
+
+    return download_price_history(
+        tickers=tickers,
+        start=start_date.strftime("%Y-%m-%d"),
+        end=end_date.strftime("%Y-%m-%d"),
+        group_by_ticker=group_by_ticker,
+        auto_adjust=auto_adjust,
+        progress=True
+    )
+
+def normalize_price_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Garante que o DataFrame de preços tenha colunas MultiIndex nomeadas
+    como ('Field', 'Ticker').
+    """
+    if not isinstance(df.columns, pd.MultiIndex):
+        raise ValueError("Esperado DataFrame com colunas MultiIndex.")
+
+    if df.columns.names != ["Field", "Ticker"]:
+        df.columns = df.columns.set_names(["Field", "Ticker"])
+
+    return df
+
+
+def generate_theoretical_dates(
+    reference_date: str | pd.Timestamp,
+    periods: int = 6,
+    spacing_days: int = 30
+) -> list[pd.Timestamp]:
+    """
+    Gera datas teóricas espaçadas aproximadamente em meses,
+    incluindo a data de referência.
+    """
+    if isinstance(reference_date, str):
+        reference_date = pd.Timestamp(reference_date)
+
+    return [
+        reference_date - pd.Timedelta(days=i * spacing_days)
+        for i in range(periods)
+    ]
+
+def get_download_window(
+    theoretical_dates: list[pd.Timestamp]
+) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """
+    Retorna o intervalo mínimo necessário para download.
+    """
+    return min(theoretical_dates), max(theoretical_dates)
+
+
+
+
+def enrich_with_metadata_and_52w_high(
+    df: pd.DataFrame,
+    ticker_column: str = "ticker",
+    history_period: Literal["1y"] = "1y",
+    high_col_name: str = "high_52w",
+) -> pd.DataFrame:
+    """
+    Adiciona metadados e o preço máximo das últimas 52 semanas a um DataFrame.
+
+    Parâmetros
+    ----------
+    df
+        DataFrame que contém a coluna de tickers e já possui indicadores calculados.
+    ticker_column
+        Nome da coluna do DataFrame que contém os tickers.
+    history_period
+        Período usado para baixar o histórico de preço (deve cobrir as últimas 52 semanas).
+        '1y' é suportado pela yfinance 1.2.0.
+    high_col_name
+        Nome da coluna que conterá o máximo das últimas 52 semanas.
+
+    Retorna
+    -------
+    pd.DataFrame
+        Uma cópia do DataFrame original, com colunas extras:
+        - industry
+        - sector
+        - symbol
+        - shortName
+        - high_52w
+    """
+    enriched_rows = []
+
+    for ticker in df[ticker_column].unique():
+        # cria objeto yfinance
+        yf_ticker = yf.Ticker(ticker)
+
+        # metadados
+        info = yf_ticker.info
+
+        industry = info.get("industry")
+        sector = info.get("sector")
+        symbol = info.get("symbol")
+        short_name = info.get("shortName")
+
+        # histórico 1 ano para extrair high de 52 semanas
+        hist = yf_ticker.history(period=history_period, auto_adjust=True)
+
+        # extrai máximo; se não houver dados, deixa como NaN
+        high_52w = (
+            hist["High"].max() if "High" in hist.columns and not hist.empty else None
+        )
+
+        enriched_rows.append(
+            {
+                "ticker": ticker,
+                "industry": industry,
+                "sector": sector,
+                "symbol": symbol,
+                "shortName": short_name,
+                high_col_name: high_52w,
+            }
+        )
+
+    # transforma em DataFrame de metadados
+    metadata_df = pd.DataFrame(enriched_rows)
+    
+    
+
+    # faz join com df original
+    df_enriched = df.merge(metadata_df, how="left", on="ticker") #não junta porque em um df está 'ticker' e no outro está 'Ticker'
+    
+    #debug
+    #print("dataframe enriquecido:")
+    #print(df_enriched)
+    #print(df_enriched.columns)
+    
+
+    return df_enriched

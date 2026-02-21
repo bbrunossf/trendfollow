@@ -11,78 +11,92 @@ e previsibilidade.
 from typing import Union
 import pandas as pd
 
-
-def bollinger_bands(df: pd.DataFrame,
-                    column: str,
-                    window: int = 20,
-                    num_std: float = 2.0,
-                    min_periods: Union[int, None] = None,
-                    prefix: str = "") -> pd.DataFrame:
+def calculate_bollinger_bands(
+    df: pd.DataFrame,
+    price_field: str = "Adj Close",
+    window: int = 20,
+    num_std: float = 2.0,
+    min_periods: int | None = None
+) -> pd.DataFrame:
     """
-    Calcula as Bandas de Bollinger para uma série temporal específica.
+    Calcula as Bandas de Bollinger para múltiplos ativos a partir de um
+    DataFrame com colunas MultiIndex (Field, Ticker).
 
-    As bandas são calculadas como:
-    - SMA (média móvel simples)
-    - Banda superior: SMA + (num_std * desvio padrão)
-    - Banda inferior: SMA - (num_std * desvio padrão)
+    As bandas são calculadas de forma vetorial para todos os ativos,
+    respeitando o padrão único de colunas do projeto.
 
-    Uso típico:
-    - Visualização em gráficos de velas
-    - Análise de volatilidade
-    - Indicadores técnicos clássicos
+    Bandas calculadas:
+    - Banda média (SMA)
+    - Banda superior
+    - Banda inferior
 
     Parâmetros
     ----------
     df : pandas.DataFrame
-        DataFrame contendo a série temporal (ex.: OHLCV).
+        DataFrame com dados de mercado em formato MultiIndex.
 
-    column : str
-        Nome da coluna sobre a qual as Bandas de Bollinger serão calculadas
-        (ex.: 'Close').
+    price_field : str, default="Adj Close"
+        Campo de preço utilizado no cálculo.
 
     window : int, default=20
-        Tamanho da janela da média móvel e do desvio padrão.
+        Janela da média móvel e do desvio padrão.
 
     num_std : float, default=2.0
-        Número de desvios padrão usados para definir
-        as bandas superior e inferior.
+        Número de desvios padrão para as bandas superior e inferior.
 
     min_periods : int ou None, default=None
-        Número mínimo de observações na janela para calcular os valores.
+        Número mínimo de observações para cálculo.
         Se None, assume o mesmo valor de `window`.
-
-    prefix : str, default=""
-        Prefixo opcional para os nomes das colunas geradas.
-        Útil caso múltiplas bandas sejam calculadas no mesmo DataFrame.
 
     Retorno
     -------
     pandas.DataFrame
-        Novo DataFrame com as seguintes colunas adicionadas:
-        - '<prefix>sma'
-        - '<prefix>upper_band'
-        - '<prefix>lower_band'
+        DataFrame original com as seguintes colunas adicionadas:
 
-    Observações
-    -----------
-    - A função NÃO modifica o DataFrame original.
-    - O cálculo é totalmente vetorizado.
+        - ('BB_MID_<window>', <Ticker>)
+        - ('BB_UPPER_<window>', <Ticker>)
+        - ('BB_LOWER_<window>', <Ticker>)
     """
-    if column not in df.columns:
-        raise ValueError(f"Coluna '{column}' não encontrada no DataFrame.")
+
+    if not isinstance(df.columns, pd.MultiIndex):
+        raise ValueError("DataFrame esperado com colunas MultiIndex (Field, Ticker).")
+
+    if price_field not in df.columns.get_level_values("Field"):
+        raise ValueError(f"Campo '{price_field}' não encontrado no DataFrame.")
 
     if min_periods is None:
         min_periods = window
 
-    df_out = df.copy()
+    # Seleciona preços
+    price_df = df.xs(price_field, axis=1, level="Field")
 
-    rolling = df_out[column].rolling(window=window, min_periods=min_periods)
+    # Média móvel (banda central)
+    rolling = price_df.rolling(window=window, min_periods=min_periods)
+    mid_band = rolling.mean()
 
-    sma = rolling.mean()
+    # Desvio padrão
     std = rolling.std()
 
-    df_out[f"{prefix}sma"] = sma
-    df_out[f"{prefix}upper_band"] = sma + (num_std * std)
-    df_out[f"{prefix}lower_band"] = sma - (num_std * std)
+    upper_band = mid_band + num_std * std
+    lower_band = mid_band - num_std * std
 
-    return df_out
+    # Reconstrução das colunas MultiIndex
+    mid_band.columns = pd.MultiIndex.from_product(
+        [[f"BB_MID_{window}"], mid_band.columns],
+        names=["Field", "Ticker"]
+    )
+
+    upper_band.columns = pd.MultiIndex.from_product(
+        [[f"BB_UPPER_{window}"], upper_band.columns],
+        names=["Field", "Ticker"]
+    )
+
+    lower_band.columns = pd.MultiIndex.from_product(
+        [[f"BB_LOWER_{window}"], lower_band.columns],
+        names=["Field", "Ticker"]
+    )
+
+    return pd.concat(
+        [df, mid_band, upper_band, lower_band],
+        axis=1
+    )

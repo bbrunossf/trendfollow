@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Trend Following – FR</title>
+
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+</head>
+<body>
+
+<h2>Força Relativa – Visualização</h2>
+
+<label>Data de referência:</label>
+<input type="date" id="referenceDate">
+
+<label>FR mínimo:</label>
+<input type="number" id="minScore" value="70">
+
+<button onclick="runPipeline()">Run</button>
+
+<hr>
+
+<div id="chart" style="width:100%; height:600px;"></div>
+
+<script>
+async function runPipeline() {
+    const refDate = document.getElementById("referenceDate").value;
+    const minScore = document.getElementById("minScore").value;
+
+    if (!refDate) {
+        alert("Selecione uma data de referência");
+        return;
+    }
+
+    const url = `/api/charts/fr-price-series?reference_date=${refDate}&min_score=${minScore}`;
+
+    const response = await fetch(url);
+    const result = await response.json();
+
+    renderChart(result.data);
+}
+
+function renderChart(series) {
+    const traces = series.map(s => ({
+        x: s.x,
+        y: s.y,
+        mode: "lines+markers",
+        name: s.ticker,
+        customdata: s.pct_change,
+        hovertemplate:
+            "<b>%{fullData.name}</b><br>" +
+            "Data: %{x}<br>" +
+            "Adj Close: %{y:.2f}<br>" +
+            "Variação: %{customdata:.2f}%<br>" +
+            "FR: " + s.FR.toFixed(2) + "<br>" +
+            "FR_rank: " + s.FR_rank +
+            "<extra></extra>"
+    }));
+
+    const layout = {
+        title: "Ativos com FR acima do mínimo",
+        xaxis: { title: "Data" },
+        yaxis: { title: "Adj Close" },
+        hovermode: "closest"
+    };
+
+    Plotly.newPlot("chart", traces, layout, {responsive: true});
+}
+</script>
+
+</body>
+</html>

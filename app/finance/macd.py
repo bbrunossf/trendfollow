@@ -11,73 +11,84 @@ from typing import Union
 import pandas as pd
 
 
-def macd(df: pd.DataFrame,
-         column: str,
-         fast: int = 12,
-         slow: int = 26,
-         signal: int = 9,
-         prefix: str = "") -> pd.DataFrame:
+def calculate_macd(
+    df: pd.DataFrame,
+    price_field: str = "Adj Close",
+    fast_window: int = 12,
+    slow_window: int = 26,
+    signal_window: int = 9
+) -> pd.DataFrame:
     """
-    Calcula o indicador MACD (Moving Average Convergence Divergence).
+    Calcula o indicador MACD para múltiplos ativos a partir de um DataFrame
+    com colunas MultiIndex (Field, Ticker).
 
-    O MACD é definido como:
-    - MACD line = EMA(fast) - EMA(slow)
-    - Signal line = EMA(signal) da MACD line
-    - Histogram = MACD line - Signal line
-
-    Uso típico:
-    - Análise de momentum
-    - Gráficos técnicos
-    - Estratégias de tendência
+    Colunas adicionadas:
+    - MACD_<fast>_<slow>
+    - MACD_SIGNAL_<signal>
+    - MACD_HIST_<fast>_<slow>_<signal>
 
     Parâmetros
     ----------
     df : pandas.DataFrame
-        DataFrame contendo a série temporal.
+        DataFrame com dados de mercado no padrão MultiIndex.
 
-    column : str
-        Nome da coluna base para o cálculo (ex.: 'Close').
+    price_field : str, default="Close"
+        Campo de preço utilizado no cálculo.
 
-    fast : int, default=12
-        Período da média móvel exponencial rápida.
+    fast_window : int, default=12
+        Janela da média móvel exponencial rápida.
 
-    slow : int, default=26
-        Período da média móvel exponencial lenta.
+    slow_window : int, default=26
+        Janela da média móvel exponencial lenta.
 
-    signal : int, default=9
-        Período da média móvel exponencial da linha MACD.
-
-    prefix : str, default=""
-        Prefixo opcional para os nomes das colunas geradas.
-        Útil para evitar colisão de nomes.
+    signal_window : int, default=9
+        Janela da média móvel exponencial do sinal.
 
     Retorno
     -------
     pandas.DataFrame
-        Novo DataFrame com as seguintes colunas adicionadas:
-        - '<prefix>macd'
-        - '<prefix>macd_signal'
-        - '<prefix>macd_hist'
-
-    Observações
-    -----------
-    - A função NÃO modifica o DataFrame original.
-    - O cálculo é totalmente vetorizado.
+        DataFrame original com as colunas de MACD adicionadas.
     """
-    if column not in df.columns:
-        raise ValueError(f"Coluna '{column}' não encontrada no DataFrame.")
 
-    df_out = df.copy()
+    if not isinstance(df.columns, pd.MultiIndex):
+        raise ValueError("DataFrame esperado com colunas MultiIndex.")
 
-    ema_fast = df_out[column].ewm(span=fast, adjust=False).mean()
-    ema_slow = df_out[column].ewm(span=slow, adjust=False).mean()
+    if df.columns.names != ["Field", "Ticker"]:
+        raise ValueError(
+            "Colunas MultiIndex devem estar nomeadas como ('Field', 'Ticker')."
+        )
+
+    if price_field not in df.columns.get_level_values("Field"):
+        raise ValueError(f"Campo '{price_field}' não encontrado no DataFrame.")
+
+    # Seleciona preços
+    price_df = df.xs(price_field, axis=1, level="Field")
+
+    # EMAs
+    ema_fast = price_df.ewm(span=fast_window, adjust=False).mean()
+    ema_slow = price_df.ewm(span=slow_window, adjust=False).mean()
 
     macd_line = ema_fast - ema_slow
-    signal_line = macd_line.ewm(span=signal, adjust=False).mean()
-    hist = macd_line - signal_line
+    signal_line = macd_line.ewm(span=signal_window, adjust=False).mean()
+    macd_hist = macd_line - signal_line
 
-    df_out[f"{prefix}macd"] = macd_line
-    df_out[f"{prefix}macd_signal"] = signal_line
-    df_out[f"{prefix}macd_hist"] = hist
+    # Reconstrói colunas MultiIndex
+    macd_line.columns = pd.MultiIndex.from_product(
+        [[f"MACD_{fast_window}_{slow_window}"], macd_line.columns],
+        names=["Field", "Ticker"]
+    )
 
-    return df_out
+    signal_line.columns = pd.MultiIndex.from_product(
+        [[f"MACD_SIGNAL_{signal_window}"], signal_line.columns],
+        names=["Field", "Ticker"]
+    )
+
+    macd_hist.columns = pd.MultiIndex.from_product(
+        [[f"MACD_HIST_{fast_window}_{slow_window}_{signal_window}"], macd_hist.columns],
+        names=["Field", "Ticker"]
+    )
+
+    return pd.concat(
+        [df, macd_line, signal_line, macd_hist],
+        axis=1
+    )

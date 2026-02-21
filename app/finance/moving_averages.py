@@ -14,7 +14,7 @@ Este módulo separa explicitamente dois conceitos diferentes de média móvel:
 Essa separação é intencional e evita ambiguidades no pipeline de dados.
 """
 
-from typing import Union
+from typing import Union, Iterable
 import pandas as pd
 
 
@@ -67,61 +67,73 @@ def moving_average_matrix(
 
 
 def simple_moving_average(
-        df: pd.DataFrame,
-        column: str,
-        window: int = 20,
-        min_periods: Union[int, None] = None,
-        output_column: Union[str, None] = None) -> pd.DataFrame:
+    df: pd.DataFrame,
+    price_field: str = "Adj Close",
+    window: int = 20,
+    min_periods: int | None = None
+) -> pd.DataFrame:
     """
-    Adiciona uma média móvel simples (SMA) a uma série temporal específica
-    dentro de um DataFrame.
+    Calcula a Média Móvel Simples (SMA) para múltiplos ativos a partir de um
+    DataFrame com colunas MultiIndex (Field, Ticker).
 
-    Uso típico:
-    - Gráficos de velas
-    - Indicadores técnicos
-    - Análise individual de ativos
+    Esta função assume que o DataFrame segue o padrão:
+        - Index: DatetimeIndex
+        - Columns: MultiIndex com níveis ['Field', 'Ticker']
+
+    A SMA será calculada de forma vetorial para todos os tickers e adicionada
+    ao DataFrame no mesmo padrão MultiIndex.
 
     Parâmetros
     ----------
     df : pandas.DataFrame
-        DataFrame contendo a série temporal (ex.: OHLCV).
+        DataFrame com dados OHLCV em formato MultiIndex.
 
-    column : str
-        Nome da coluna sobre a qual a média móvel será calculada
-        (ex.: 'Close').
+    price_field : str, default="Adj Close"
+        Campo de preço utilizado para o cálculo da média móvel
+        (ex.: 'Close', 'Adj Close').
 
     window : int, default=20
         Tamanho da janela da média móvel.
 
     min_periods : int ou None, default=None
-        Número mínimo de observações na janela para calcular a média.
+        Número mínimo de observações para cálculo da média.
         Se None, assume o mesmo valor de `window`.
-
-    output_column : str ou None, default=None
-        Nome da coluna de saída.
-        Se None, o nome será gerado automaticamente no formato:
-        'SMA_<window>'.
 
     Retorno
     -------
     pandas.DataFrame
-        Novo DataFrame com a coluna da média móvel adicionada.
+        Novo DataFrame com a coluna de SMA adicionada no formato:
+        ('SMA_<window>', <Ticker>)
 
     Exemplo de coluna criada
     ------------------------
-    SMA_20
+    ('SMA_20', 'PETR4.SA')
     """
-    if column not in df.columns:
-        raise ValueError(f"Coluna '{column}' não encontrada no DataFrame.")
+
+    if not isinstance(df.columns, pd.MultiIndex):
+        raise ValueError("DataFrame esperado com colunas MultiIndex (Field, Ticker).")
+
+    if price_field not in df.columns.get_level_values("Field"):
+        raise ValueError(f"Campo '{price_field}' não encontrado no DataFrame.")
 
     if min_periods is None:
         min_periods = window
 
-    if output_column is None:
-        output_column = f"SMA_{window}"
+    # Seleciona apenas o campo de preço (ex.: Close)
+    price_df = df.xs(price_field, axis=1, level="Field")
 
-    df_out = df.copy()
-    df_out[output_column] = (df_out[column].rolling(
-        window=window, min_periods=min_periods).mean())
+    # Cálculo vetorial da média móvel para todos os tickers
+    sma_df = price_df.rolling(
+        window=window,
+        min_periods=min_periods
+    ).mean()
 
-    return df_out
+    # Reconstrói o MultiIndex das colunas
+    sma_df.columns = pd.MultiIndex.from_product(
+        [[f"SMA_{window}"], sma_df.columns],
+        names=["Field", "Ticker"]
+    )
+
+    # Retorna um novo DataFrame com a SMA anexada
+    return pd.concat([df, sma_df], axis=1)
+

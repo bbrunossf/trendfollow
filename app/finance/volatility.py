@@ -130,3 +130,106 @@ def atr_stop(df: pd.DataFrame,
     df_out[column_name] = df_out[close_col] - (df_out[atr_col] * multiplier)
 
     return df_out
+
+def calculate_atr(
+    df: pd.DataFrame,
+    high_field: str = "High",
+    low_field: str = "Low",
+    close_field: str = "Close",
+    window: int = 14
+) -> pd.DataFrame:
+    """
+    Calcula o Average True Range (ATR) para múltiplos ativos a partir de um
+    DataFrame com colunas MultiIndex (Field, Ticker).
+    """
+
+    if df.columns.names != ["Field", "Ticker"]:
+        raise ValueError("DataFrame deve possuir colunas MultiIndex ('Field', 'Ticker').")
+
+    for field in (high_field, low_field, close_field):
+        if field not in df.columns.get_level_values("Field"):
+            raise ValueError(f"Campo '{field}' não encontrado no DataFrame.")
+
+    high = df.xs(high_field, axis=1, level="Field")
+    low = df.xs(low_field, axis=1, level="Field")
+    close = df.xs(close_field, axis=1, level="Field")
+
+    prev_close = close.shift(1)
+
+    tr_hl = high - low
+    tr_hc = (high - prev_close).abs()
+    tr_lc = (low - prev_close).abs()
+
+    # True Range por ticker (mantém DataFrame)
+    true_range = (
+        pd.concat(
+            [tr_hl, tr_hc, tr_lc],
+            axis=1,
+            keys=["HL", "HC", "LC"]
+        )
+        .swaplevel(0, 1, axis=1)
+        .groupby(level=0)
+        .max()
+    )
+
+    # ATR vetorial por ticker
+    atr = true_range.ewm(alpha=1 / window, adjust=False).mean()
+
+    atr.columns = pd.MultiIndex.from_product(
+        [[f"ATR_{window}"], atr.columns],
+        names=["Field", "Ticker"]
+    )
+
+    return pd.concat([df, atr], axis=1)
+
+
+
+def calculate_atr_stop(
+    df: pd.DataFrame,
+    close_field: str = "Adj Close",
+    atr_window: int = 14,
+    multiplier: float = 1.5
+) -> pd.DataFrame:
+    """
+    Calcula o nível de stop baseado no ATR.
+
+    Regra:
+        Stop = Close - (ATR × multiplicador)
+
+    Coluna adicionada:
+        ('STOP_ATR_<window>_<multiplier>', <Ticker>)
+    """
+
+    atr_field = f"ATR_{atr_window}"
+
+    if atr_field not in df.columns.get_level_values("Field"):
+        raise ValueError(f"Campo '{atr_field}' não encontrado no DataFrame.")
+
+    close = df.xs(close_field, axis=1, level="Field")
+    atr = df.xs(atr_field, axis=1, level="Field")
+
+    stop = close - (atr * multiplier)
+
+    stop.columns = pd.MultiIndex.from_product(
+        [[f"STOP_ATR_{atr_window}_{multiplier}"], stop.columns],
+        names=["Field", "Ticker"]
+    )
+
+    return pd.concat([df, stop], axis=1)
+
+
+def calculate_atr_and_stop(
+    df: pd.DataFrame,
+    window: int = 14,
+    multiplier: float = 1.5
+) -> pd.DataFrame:
+    """
+    Função de alto nível para cálculo do ATR e do stop ATR.
+
+    Esta função é destinada ao uso no pipeline principal.
+    """
+
+    df = calculate_atr(df, window=window)
+    df = calculate_atr_stop(df, atr_window=window, multiplier=multiplier)
+
+    return df
