@@ -24,37 +24,6 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="ui/static"), name="static")
 templates = Jinja2Templates(directory="ui/templates")
 
-# =========================================================
-# Models (temporariamente aqui; depois vão para models.py)
-# =========================================================
-
-
-# class AnalysisRequest(BaseModel):
-    # reference_date: Optional[date] = Field(
-        # default=None, description="Data de referência para a análise")
-
-    # analysis_months: int = Field(default=config.ANALYSIS_MONTHS,
-                                 # ge=1,
-                                 # description="Horizonte de análise em meses")
-
-    # min_price: float = Field(default=config.MIN_PRICE,
-                             # ge=0,
-                             # description="Preço mínimo do ativo")
-
-    # min_volume: int = Field(default=config.MIN_VOLUME,
-                            # ge=0,
-                            # description="Volume mínimo negociado")
-
-    # fr_min_threshold: float = Field(default=config.FR_MIN_THRESHOLD,
-                                    # ge=0,
-                                    # le=100,
-                                    # description="Força relativa mínima")
-
-    # top_n: Optional[int] = Field(
-        # default=config.TOP_N_ASSETS,
-        # ge=1,
-        # description="Quantidade máxima de ativos no ranking")
-
 
 # ------------------------------------------------------------------
 # Registro dos routers

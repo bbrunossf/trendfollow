@@ -33,7 +33,7 @@ async function runPipeline() {
         return;
     }
 
-    const url = `/api/charts/fr-price-series?reference_date=${refDate}&min_score=${minScore}`;
+    const url = `/api/fr-price-series?reference_date=${refDate}&min_score=${minScore}`;
 
     const response = await fetch(url);
     const result = await response.json();

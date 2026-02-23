@@ -1,7 +1,7 @@
 async function runPipeline() {
     const dateInput = document.getElementById("referenceDate").value;
 
-    let url = "/api/charts/fr-price-series";
+    let url = "/api/fr-price-series";
     if (dateInput) {
         url += `?reference_date=${dateInput}`;
     }
@@ -31,7 +31,7 @@ async function runPipeline() {
 					window.fetchAndRenderRankingTable(dateInput);
 				}
 			}
-		}
+		}		
 
     } catch (error) {
         console.error(error);

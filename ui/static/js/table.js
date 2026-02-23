@@ -94,6 +94,9 @@ function renderRankingTable(data) {
         // dispara evento custom no container (ou use console.log)
         const evt = new CustomEvent('fr:rowSelected', { detail: rowObj });
         container.dispatchEvent(evt);
+		
+		
+		
     }, false);
 }
 

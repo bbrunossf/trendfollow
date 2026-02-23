@@ -21,14 +21,16 @@ from typing import Iterable, List, Optional, Literal
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from brapi import Brapi
 
 
 
 BRAPI_BASE_URL = "https://brapi.dev/api"
 BRAPI_STOCK_LIST_ENDPOINT = "/quote/list"
+BRAPI_TOKEN = "ikKPyJs6dZwA3GUp2SX46z"
 
 
-def list_b3_assets(min_price: float = 5.0,
+def list_b3_assets(min_price: float = 4.0,
                    min_volume: float = 1_000_000,
                    excluded_suffixes: Iterable[str] = ("11", "32"),
                    add_yfinance_suffix: bool = True,
@@ -58,35 +60,35 @@ def list_b3_assets(min_price: float = 5.0,
     list[str]
         Lista de tickers filtrados e padronizados.
     """
-    url = f"{BRAPI_BASE_URL}{BRAPI_STOCK_LIST_ENDPOINT}"
+    client = Brapi(
+        api_key=BRAPI_TOKEN, 
+        environment="production",
+    )
+    stocks = client.quote.list()
+    #change, stock, sector, name, close, logo, type, market_cap, volume
+    data=[]
+    for stock in stocks.stocks: #para cada ativo, retornar nome/ticket, close, volume
+        data.append({
+            "ticket": stock.stock,
+            "name": stock.name,
+            "close": stock.close,
+            "sector": stock.sector,
+            "volume": stock.volume
+        })
 
-    response = requests.get(url, timeout=timeout)
-    response.raise_for_status()
+    df = pd.DataFrame.from_dict(data) #cria dataframe a partir do dict data
+    print(df.head())
+    dff = df[ (df['volume'] > min_volume) &  (df['close'] > min_price) ]
+    dff = dff[['ticket', 'name', 'close', 'sector', 'volume']].sort_values(by='ticket')
+    substring = ['11', '32']
+    dff_negative = dff['ticket'].str.contains('|'.join(substring))
+    dff = dff[~dff_negative]
+    
+    sfx = '.SA' #incluir o sufixo .SA
+    acoess = dff['ticket'].apply(lambda x: f"{x}{sfx}").values.tolist()         
+    #print(acoess[0:10])
+    return sorted(acoess) #só preciso dos nomes das ações filtradas pelo preço e volume
 
-    data = response.json()
-
-    stocks = data.get("stocks", [])
-
-    filtered = []
-
-    for stock in stocks:
-        symbol = stock.get("stock")
-        price = stock.get("close")
-        volume = stock.get("volume")
-
-        if not symbol or price is None or volume is None:
-            continue
-
-        if price < min_price or volume < min_volume:
-            continue
-
-        if any(symbol.endswith(suffix) for suffix in excluded_suffixes):
-            continue
-
-        ticker = f"{symbol}.SA" if add_yfinance_suffix else symbol
-        filtered.append(ticker)
-
-    return sorted(filtered)
 
 
 def download_price_history(tickers: Iterable[str],
