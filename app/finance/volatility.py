@@ -164,12 +164,9 @@ def calculate_atr(
     true_range = (
         pd.concat(
             [tr_hl, tr_hc, tr_lc],
-            axis=1,
+            axis=0,
             keys=["HL", "HC", "LC"]
-        )
-        .swaplevel(0, 1, axis=1)
-        .groupby(level=0)
-        .max()
+        ).groupby(level=1).max()
     )
 
     # ATR vetorial por ticker
