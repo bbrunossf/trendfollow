@@ -1,0 +1,112 @@
+/* ================= RESET ================= */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+/* ================= TOPBAR ================= */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: #020617;
+  border-bottom: 1px solid #1e293b;
+}
+
+.topbar-left .logo {
+  font-weight: bold;
+  color: #60a5fa;
+}
+
+.topbar-left .subtitle {
+  margin-left: 6px;
+  opacity: 0.7;
+}
+
+.topbar-center label {
+  margin-right: 8px;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-right .status {
+  color: #22c55e;
+  font-size: 0.85rem;
+}
+
+.topbar-right button {
+  background: #2563eb;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
+
+/* ================= DASHBOARD ================= */
+.dashboard {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ================= CARDS ================= */
+.card {
+  background: #020617;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.card h3 {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.card-large {
+  min-height: 320px;
+}
+
+/* ================= GRID ================= */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+/* ================= CHART CONTAINERS ================= */
+.chart-container {
+  width: 100%;
+  min-height: 360px;
+}
+
+/* evita achatamento no zoom */
+#scatterchart,
+#candlechart,
+#chart {
+  min-height: 360px;
+}
+
+/* ================= TABLE ================= */
+#table {
+  overflow-x: auto;
+  height: 300px;
+  overflow-y: auto;
+}

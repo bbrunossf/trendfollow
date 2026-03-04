@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Trend Following – Validação FR</title>
+
+  <!-- Plotly -->
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+
+  <!-- GridJS -->
+  <link
+    href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css"
+    rel="stylesheet"
+  />
+  <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
+
+  <link rel="stylesheet" href="/static/css/dashboard.css" />
+</head>
+
+<body>
+  <!-- ================= HEADER ================= -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="logo">QuantumTrade</span>
+      <span class="subtitle">Terminal</span>
+    </div>
+
+    <div class="topbar-center">
+      <label>Reference date</label>
+      <input type="date" id="referenceDate" />
+    </div>
+
+    <div class="topbar-right">
+      <span class="status">● Market Open</span>
+      <button onclick="runPipeline()">Run Analysis</button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN ================= -->
+  <main class="dashboard">
+
+    <!-- Gráfico histórico -->
+    <section class="card card-large">
+      <h3>Gráfico de evolução de preços dos ativos selecionados</h3>
+      <div id="chart" class="chart-container"></div>
+    </section>
+
+    <!-- Tabela -->
+    <section class="card">
+      <div id="table"></div>
+    </section>
+
+    <!-- Grid inferior -->
+    <section class="grid-2">
+      <div class="card">
+        <h3>Gráfico Candlestick do ativo selecionado</h3>
+        <div id="candlechart" class="chart-container"></div>
+      </div>
+
+      <div class="card">
+        <h3>Matriz de Risco x Retorno</h3>
+        <div id="scatterchart" class="chart-container"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Scripts -->
+  <script src="/static/js/candlechart.js"></script>
+  <script src="/static/js/table.js"></script>
+  <script src="/static/js/fr_chart.js"></script>
+  <script src="/static/js/scatterchart.js"></script>
+</body>
+</html>

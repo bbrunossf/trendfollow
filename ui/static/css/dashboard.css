@@ -1,0 +1,155 @@
+/* ================= RESET ================= */
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f172a;
+    color: #e5e7eb;
+    overflow: hidden; /* elimina scroll vertical global */
+}
+
+/* ================= TOPBAR ================= */
+.topbar {
+    height: 8vh;
+    min-height: 56px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+
+    background: #020617;
+    border-bottom: 1px solid #1e293b;
+}
+
+.topbar-left .logo {
+    font-weight: bold;
+    color: #60a5fa;
+}
+
+.topbar-left .subtitle {
+    margin-left: 6px;
+    opacity: 0.7;
+}
+
+.topbar-center label {
+    margin-right: 8px;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.topbar-right .status {
+    color: #22c55e;
+    font-size: 0.85rem;
+}
+
+.topbar-right button {
+    background: #2563eb;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+}
+
+/* ================= DASHBOARD ================= */
+.dashboard {
+    height: 92vh;
+    padding: 16px 24px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ================= CARDS ================= */
+.card {
+    background: #020617;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 12px 14px;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.card h3 {
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+/* ================= OVERVIEW ================= */
+.card-overview {
+    height: 18vh;
+}
+
+/* ================= TABLE ================= */
+.card-table {
+    height: 34vh;
+}
+
+/* ================= ANALYSIS ROW ================= */
+.analysis-row {
+    height: 40vh;
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: 68% 32%;
+    gap: 16px;
+}
+
+.card-candlestick,
+.card-scatter {
+    min-width: 0;
+}
+
+.analysis-row > .card {
+    width: 100%;
+}
+
+/* ================= CHART CONTAINERS ================= */
+.chart-container {
+    width: 100%;
+    flex: 1; /* ocupa todo o espaço restante do card */
+    min-height: 0; /* essencial para evitar overflow em flex */
+}
+
+/* ================= TABLE ================= */
+#table {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+/* ================= AJUSTES FINOS ================= */
+
+/* reduz sensação de “card inflado” */
+.card-overview h3,
+.card-table h3 {
+    font-size: 0.8rem;
+}
+
+/* garante que Plotly não force altura mínima */
+#chart,
+#candlechart,
+#scatterchart {
+    height: 100% !important;
+}
