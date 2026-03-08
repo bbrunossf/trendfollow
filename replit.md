@@ -1,27 +1,36 @@
 # Dash Finance - Trend Following B3
 
 ## Overview
-A Python Dash web application for analyzing Brazilian stock market (B3) trends. It downloads financial data, calculates weighted momentum factors, and displays interactive charts with technical indicators (Bollinger Bands, MACD, ATR Stop Loss).
+A FastAPI web application for analyzing Brazilian stock market (B3) trends using a Trend Following strategy. It identifies stocks with strong relative strength and upward momentum over the last 6 months.
 
 ## Architecture
 - **Language**: Python 3.10
-- **Framework**: Dash (Flask-based) with Bootstrap components
-- **Key Libraries**: yfinance, TA-Lib, pandas, plotly, dash-bootstrap-components
-- **System Dependency**: ta-lib C library (installed via Nix)
-- **Port**: 5000 (development and production)
+- **Framework**: FastAPI with Jinja2 templates
+- **Frontend**: Vanilla JavaScript + Plotly.js for interactive charts
+- **Key Libraries**: fastapi, uvicorn, yfinance, brapi, pandas, numpy, plotly, jinja2
+- **Port**: 5000
 
 ## Project Structure
-- `main.py` - Main application file (converted from Jupyter notebook)
+- `main.py` - FastAPI app entry point; mounts static files and Jinja2 templates
+- `app/api/routes.py` - API endpoints (ranking, candlestick chart, scatter chart)
+- `app/core/` - Orchestration: ranking pipeline and initialization
+- `app/data/` - Data acquisition via BRAPI and yfinance; preprocessing
+- `app/finance/` - Financial indicators (Bollinger, MACD, ATR, returns, volatility)
+- `app/services/` - Scoring and ranking business logic (Força Relativa)
+- `app/charts/` - Plotly JSON payload builders
+- `app/config.py` - Global settings (MIN_PRICE, MIN_VOLUME, indicator params)
+- `ui/templates/` - HTML Jinja2 templates
+- `ui/static/` - CSS and JavaScript assets
 - `requirements.txt` - Python dependencies
 - `Dockerfile` - Original Docker setup (not used in Replit)
 
 ## How It Works
-1. User selects a reference date and clicks "Executar"
-2. App fetches stock data from brapi.dev API and yfinance
-3. Calculates a weighted momentum factor (FR) for each stock
-4. Filters stocks with FR >= 80
-5. Displays interactive candlestick charts with technical indicators
+1. App fetches all B3 tickers via BRAPI and filters by volume and price
+2. Downloads historical OHLCV data via yfinance
+3. Calculates technical indicators (SMA, Bollinger Bands, MACD, ATR)
+4. Computes Força Relativa (Relative Strength) by comparing 6-month price snapshots
+5. Ranks assets and selects those in the top 80th percentile
+6. Serves an interactive dashboard with ranking table and drill-down charts
 
-## Deployment
-- Development: `python main.py` on port 5000
-- Production: `gunicorn --bind=0.0.0.0:5000 --reuse-port main:server`
+## Running
+- **Workflow command**: `uvicorn main:app --host 0.0.0.0 --port 5000`

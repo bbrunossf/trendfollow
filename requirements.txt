@@ -7,3 +7,14 @@ plotly
 jinja2
 yfinance==1.2.0
 
+fastapi
+jinja2
+numpy
+pandas
+plotly
+python-multipart
+requests
+uvicorn
+yfinance==1.2.0
+brapi
+python-dateutil
