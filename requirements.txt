@@ -18,3 +18,4 @@ uvicorn
 yfinance==1.2.0
 brapi
 python-dateutil
+gunicorn
