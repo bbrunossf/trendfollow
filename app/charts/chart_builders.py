@@ -149,6 +149,8 @@ def build_candle_chart_payload(
     # Prepara o slice final (ordenado, sem período sem indicadores)
     # ------------------------------------------------------------------
     df_plot = df_ticker.sort_index().iloc[start_idx:]
+    
+    #Aqui não dá pra incluir o shortName porque ele só foi incluído no df para gerar a tabela, e o df para gerar o gráfico de candle não tem essa coluna.
 
     # Eixo temporal e séries numéricas
     datas = df_plot.index.to_pydatetime().tolist()
@@ -157,6 +159,13 @@ def build_candle_chart_payload(
     low_prices = df_plot["Low"].astype(float).tolist()
     close_prices = df_plot["Close"].astype(float).tolist()
     volume = df_plot["Volume"].tolist()
+
+    #amplitude_preco = max(df_plot["High"]) - min(df_plot["Low"])
+    #altura_volume_desejada = amplitude_preco * 0.20
+    #escala_volume = df_plot["Volume"] / max(df_plot["Volume"]) * altura_volume_desejada
+    #base_volume = min(low_prices)
+    #volume_escalado = (base_volume + escala_volume).tolist()
+
     volume_medio = df_plot["volume_medio"].tolist()
 
     # Cores de volume: verde se fechamento > abertura, vermelho caso contrário
@@ -243,26 +252,28 @@ def build_candle_chart_payload(
         {
             "type": "bar",
             "x": datas,
-            "y": volume,
+            "y": volume,  # volume,
             "marker": {"color": volume_colors},
             "name": "Volume",
             "yaxis": "y2",
+            "opacity": 0.3,
             "showlegend": False,
+            "customdata": volume,
         }
     )
 
     # Volume Médio (linha)
-    plotly_data.append(
-        {
-            "type": "scatter",
-            "mode": "lines",
-            "x": datas,
-            "y": volume_medio,
-            "name": "Volume Médio",
-            "line": {"color": "blue"},
-            "yaxis": "y2",
-        }
-    )
+    # plotly_data.append(
+    #     {
+    #         "type": "scatter",
+    #         "mode": "lines",
+    #         "x": datas,
+    #         "y": volume_medio,
+    #         "name": "Volume Médio",
+    #         "line": {"color": "blue"},
+    #         "yaxis": "y2",
+    #     }
+    # )
 
     # MACD — linha principal
     plotly_data.append(
@@ -307,8 +318,14 @@ def build_candle_chart_payload(
     # Layout com subplots verticais
     # ------------------------------------------------------------------
     layout = {
-        "height": 650,
+        "autosize": True,  # "height": 650,
         "title": f"Candlestick — {ticker}",
+        "margin": {
+            "t": 40,  # topo
+            "b": 40,  # base
+            "l": 40,  # esquerda
+            "r": 20,  # direita
+        },
         "xaxis": {
             "title": "Data",
             "type": "date",
@@ -317,18 +334,22 @@ def build_candle_chart_payload(
         },
         "yaxis": {  # Candlestick + indicadores de preço
             "title": "Preço",
-            "domain": [0.3, 1],
+            # "domain": [0.35, 1],
             "autorange": True,
             "rangemode": "normal",
         },
         "yaxis2": {  # Volume
             "title": "Volume",
-            "domain": [0.15, 0.3],
+            "overlaying": "y",
+            "side": "right",
+            "rangemode": "tozero",
+            "showticklabels": False,
+            # "domain": [0.20, 0.33],
             "showgrid": False,
         },
         "yaxis3": {  # MACD
             "title": "MACD",
-            "domain": [0, 0.15],
+            "domain": [0, 0.18],
             "showgrid": False,
         },
         "hovermode": "x unified",
@@ -486,8 +507,8 @@ def build_scatter_chart_payload(
     # Layout
     # ------------------------------------------------------------------
     layout = {
-        "title": "Dispersão por Setor — Risco × Distância do Topo (52 semanas)",
-        "height": 500,
+        # "title": "Dispersão por Setor — Risco × Distância do Topo (52 semanas)",
+        "autosize": True,  # "height": 500,
         "xaxis": {
             "title": "Distância até o Topo de 52 semanas (%)",
             "zeroline": False,
@@ -495,6 +516,7 @@ def build_scatter_chart_payload(
         "yaxis": {
             "title": "Risco até o STOP ATR (%)",
             "zeroline": False,
+            "rangemode": "tozero",
         },
         "hovermode": "closest",
         "legend": {

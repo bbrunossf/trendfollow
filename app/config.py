@@ -8,8 +8,8 @@ Contém apenas constantes e valores default.
 # ===============================
 # Universo de ativos (BRAPI)
 # ===============================
-MIN_PRICE = 5.0
-MIN_VOLUME = 1_000_000
+MIN_PRICE = 3.0
+MIN_VOLUME = 200_000
 EXCLUDE_SUFFIXES = ("11", "32")
 
 # ===============================

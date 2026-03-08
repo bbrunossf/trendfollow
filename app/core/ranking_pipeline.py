@@ -165,6 +165,9 @@ def build_ranking_result(
     #   'sector', 'symbol', 'shortName', 'high_52w', 'distancia', 'Risco_%',
     #   'Retorno_Risco'],
 
+    #teste tirando algumas colunas para tabela ficar totalmente legível
+    df_final = df_final[['ticker', 'FR_rank', 'Adj Close', 'sector', 'shortName', 'high_52w', 'Retorno_Risco', 'distancia', 'Risco_%']]
+
     # ------------------------------------------------------------------
     # 10. Sanitização para serialização JSON
     # ------------------------------------------------------------------
