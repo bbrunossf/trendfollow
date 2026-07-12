@@ -27,7 +27,7 @@ Inicialmente, foram definidos os seguintes limites:
 - somente ativos sem o código '11' e '32' (fundos de índices).  
 Todos esses critérios são definidos em variáveis no arquivo config.py, permitindo fácil alteração
 
-A API Brapi permite listar todos os ativos da B3, e foi criado um dataframe inicial com os ativos que atendam aos limites definidos anteriormente;
+A API Brapi permite listar todos os ativos da B3, e foi criado um dataframe inicial com os ativos que atendam aos limites definidos anteriormente;  
 **NOTA:** Na versão atualizada da API da Brapi, o endpoint de consulta com retorno dos ativos e dados iniciais (como último preço de fechamento, volume, etc) mudou. Outra grande mudança é que agora existem outros endpoints para consulta de dados históricos de ativos, assim como no yfinance. A versão gratuita da API tem um bom limite de consultas mensais, e pode ser uma vantagem migrar o código no futuro para não depender mais da yfinance.
 
 ## Estratégia adotada
@@ -68,12 +68,11 @@ Além do fator de ponderação, o gráfico do ativo contribui para análise, ao 
 <descrever a nova interface>  
 
 ## Estrutura de diretórios e arquivos, definição de responsabilidades e backend/frontend
-
+<descrever a nova estrutura>  
+  
 ## Conclusão
 
 Este projeto demonstra como é possível utilizar dados financeiros e ferramentas de análise de dados para identificar ativos com potencial de alta na B3. A interface web facilita a interação do usuário com os dados, proporcionando uma ferramenta alternativa prática para investidores.
 
-## Código-fonte
-O código-fonte completo está disponível em <em atualização> .  
-A aplicação está hospedada em <em atualização>.  
-A imagem renderizada do jupyter notebook está em <em atualização>
+A aplicação está hospedada na plataforma [Replit](https://trendfollow--BrunoOliveir128.replit.app).  
+
