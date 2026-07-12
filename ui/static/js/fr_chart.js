@@ -1,3 +1,22 @@
+function setLoading(isLoading) {
+  const overlay = document.getElementById("loadingOverlay");
+  const btn = document.querySelector('.topbar-right button');
+  if (!overlay || !btn) return;
+
+  if (isLoading) {
+    overlay.classList.remove("hidden");
+    btn.disabled = true;
+    btn.dataset.originalText = btn.dataset.originalText || btn.textContent;
+    btn.textContent = "Loading...";
+  } else {
+    overlay.classList.add("hidden");
+    btn.disabled = false;
+    if (btn.dataset.originalText) {
+      btn.textContent = btn.dataset.originalText;
+    }
+  }
+}
+
 async function runPipeline() {
   const dateInput = document.getElementById("referenceDate").value;
 
@@ -5,6 +24,8 @@ async function runPipeline() {
   if (dateInput) {
     url += `?reference_date=${dateInput}`;
   }
+
+  setLoading(true);
 
   try {
     const response = await fetch(url);
@@ -36,5 +57,7 @@ async function runPipeline() {
   } catch (error) {
     console.error(error);
     alert("Erro ao executar o pipeline.");
+  } finally {
+    setLoading(false);
   }
 }
